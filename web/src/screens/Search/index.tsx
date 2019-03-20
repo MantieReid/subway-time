@@ -1,40 +1,67 @@
-import * as React from 'react';
+import React, { useState, useEffect } from 'react';
 
 import NavigationBar from '~/components/NavigationBar';
-import Query, { IQueryResult } from '~/components/Query';
 import SearchResults from '~/components/SearchResults';
-import StoreValue from '~/components/StoreValue';
 
-import { IStation } from '~/state/station';
-import { clearSearch, setSearchTerm } from '~/state/search';
-import { searchStations } from '~/state/stations';
-import store, { IStore } from '~/state/store';
+import { IStationsById, stationActions, stationState } from '~/state/station';
+import { searchActions, searchState } from '~/state/search';
+import { ILinesById, lineActions, lineState } from '~/state/line';
 
 interface IProps {
   path?: string;
 }
 
-const Search = ({  }: IProps) => (
-  <>
-    <NavigationBar
-      onSearchChangeWithValue={setSearchTerm}
-      onSearchFocusWithValue={setSearchTerm}
-    />
-    <StoreValue store={store} property="currentSearchTerm">
-      {({ currentSearchTerm }: IStore) =>
-        currentSearchTerm ? (
-          <Query
-            query={searchStations}
-            parameters={{ search: currentSearchTerm }}
-          >
-            {({ data }: IQueryResult<IStation[]>) => (
-              <SearchResults stations={data} onClick={clearSearch} />
-            )}
-          </Query>
-        ) : null
-      }
-    </StoreValue>
-  </>
-);
+const Search = ({  }: IProps) => {
+  const [linesById] = lineState.useObserver<ILinesById | null>(
+    ({ linesById }) => linesById,
+  );
+  const [resultStationIds] = searchState.useObserver<string[] | null>(
+    ({ resultStationIds }) => resultStationIds,
+  );
+  const [stationsById] = stationState.useObserver<IStationsById | null>(
+    ({ stationsById }) => stationsById,
+  );
+
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    searchActions.search(searchTerm);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    if (!linesById) {
+      lineActions.fetchLines();
+      stationActions.fetchStations();
+    }
+  }, []);
+
+  if (!resultStationIds || !linesById || !stationsById) {
+    return null;
+  }
+
+  const resultStations = resultStationIds.map(
+    stationId => stationsById[stationId],
+  );
+
+  const clearSearch = () => {
+    setSearchTerm('');
+  };
+
+  return (
+    <>
+      <NavigationBar
+        onSearchChangeWithValue={setSearchTerm}
+        onSearchFocusWithValue={setSearchTerm}
+      />
+      {resultStations.length ? (
+        <SearchResults
+          linesById={linesById}
+          stations={resultStations}
+          onClick={clearSearch}
+        />
+      ) : null}
+    </>
+  );
+};
 
 export default Search;

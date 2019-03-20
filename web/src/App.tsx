@@ -9,7 +9,7 @@ import styles from './App.styles.css';
 const App = () => (
   <div className={styles.App}>
     <Search />
-    <Router />
+    {/* <Router /> */}
   </div>
 );
 
