@@ -1,21 +1,25 @@
 import * as React from 'react';
 
+import LineAdvisories from '~/components/LineAdvisories';
 import LineId from '~/components/LineId';
 
+import { ILine, ILinesById, ILineAdvisory } from '~/state/line';
 import {
   IStation,
-  IStationLine,
-  IStationLineDirection,
-  IStationLineDirectionTime,
+  IStationPlatform,
+  IStationPlatformDirection,
+  IStationPlatformDirectionTime,
 } from '~/state/station';
 
 import Skeleton from './Skeleton';
 import styles from './styles.css';
 
 interface IProps {
-  advisoriesComponent?: React.ReactNode;
+  advisories: ILineAdvisory[];
+  linesById: ILinesById;
   lastUpdate: number;
   station: IStation;
+  platforms: IStationPlatform[];
   updateData: () => void;
 }
 
@@ -52,8 +56,9 @@ class TimeTable extends React.Component<IProps, IState> {
   public render() {
     const { lastUpdateString } = this.state;
     const {
-      advisoriesComponent,
-      station: { name: stationName, platforms },
+      advisories,
+      station: { name: stationName },
+      platforms,
       updateData,
     } = this.props;
 
@@ -73,17 +78,19 @@ class TimeTable extends React.Component<IProps, IState> {
         </div>
         <div>{platforms.map(this.renderPlatform)}</div>
         <div className={styles.footer}>
-          <div className={styles.advisories}>{advisoriesComponent}</div>
+          <div className={styles.advisories}>
+            <LineAdvisories advisories={advisories} />
+          </div>
           <div className={styles.lastUpdate}>updated {lastUpdateString}</div>
         </div>
       </div>
     );
   }
 
-  public renderPlatform = ({
-    line: { id: lineId, color: lineColor },
-    directions,
-  }: IStationLine) => {
+  public renderPlatform = ({ lineId, directions }: IStationPlatform) => {
+    const { linesById } = this.props;
+    const { color: lineColor }: ILine = linesById[lineId] || {};
+
     const hasDirections = directions && directions.length;
     return (
       <div
@@ -95,7 +102,9 @@ class TimeTable extends React.Component<IProps, IState> {
         <LineId id={lineId} color={lineColor} className={styles.lineId} />
         <div className={styles.directions}>
           {hasDirections ? (
-            (directions as IStationLineDirection[]).map(this.renderDirection)
+            (directions as IStationPlatformDirection[]).map(
+              this.renderDirection,
+            )
           ) : (
             <div className={styles.directionEmpty}>No train information.</div>
           )}
@@ -107,7 +116,7 @@ class TimeTable extends React.Component<IProps, IState> {
   public renderDirection = ({
     name: directionName,
     times,
-  }: IStationLineDirection) => (
+  }: IStationPlatformDirection) => (
     <div key={directionName} className={styles.direction}>
       <div className={styles.directionName}>{directionName}</div>
       <div className={styles.trains}>
@@ -117,9 +126,9 @@ class TimeTable extends React.Component<IProps, IState> {
   );
 
   public renderTime = (
-    { lastStationName, minutes }: IStationLineDirectionTime,
+    { lastStationName, minutes }: IStationPlatformDirectionTime,
     index: number,
-    filteredTrains: IStationLineDirectionTime[],
+    filteredTrains: IStationPlatformDirectionTime[],
   ) => (
     <div
       key={`${index} ${lastStationName} ${minutes}`}
@@ -134,8 +143,8 @@ class TimeTable extends React.Component<IProps, IState> {
         {minutes === 0
           ? 'Now'
           : typeof minutes === 'number'
-            ? `${minutes} min`
-            : minutes}
+          ? `${minutes} min`
+          : minutes}
       </div>
       <div className={styles.lastStationName}>{lastStationName}</div>
     </div>
