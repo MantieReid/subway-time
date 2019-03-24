@@ -29,7 +29,7 @@
     "natural-compare-lite": "^1.4.0",
     "react": "^16.8.5",
     "react-dom": "^16.8.5",
-    "react-helmet": "^5.2.0",
+    "react-helmet": "^6.0.0-beta",
     "react-use": "^5.16.0",
     "sanitize.css": "^8.0.0"
   },
